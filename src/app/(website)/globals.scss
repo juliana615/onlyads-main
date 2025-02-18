@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --native-background: 251, 251, 251;
+    --black-primary: 38, 38, 38;
+    --black-secondary: 112, 112, 112;
+    --button-background-primary: 0, 11, 167;
+    --button-background-secondary: 125, 131, 220;
+    --surface-line-primary: 230, 230, 230;
+    --card-border: 229, 231, 255;
+    --card-background: 248, 248, 255;
+    --link-active: 240, 239, 246;
+    --text-active: 0, 11, 167;
+  }
+
+  html,
+  body {
+    @apply h-full text-black-primary font-medium overflow-x-hidden;
+  }
+}
+
+.form {
+  label {
+    @apply block w-full text-black-secondary text-xs md:text-sm;
+  }
+  input {
+    @apply w-full border border-surf-primary rounded-lg px-3 py-2 md:py-2.5 placeholder:text-black-secondary text-xs leading-4 md:text-sm md:leading-5 focus-within:outline-black-primary;
+  }
+}
+.btn {
+  @apply rounded-lg p-2 md:p-2.5 text-xs md:text-sm;
+}
+.btn:disabled {
+  @apply bg-btn-secondary;
+}
+.btn-primary {
+  @apply bg-btn-primary text-white;
+}
+.btn-secondary {
+  @apply border border-surf-primary;
+}
+.title {
+  @apply font-semibold leading-5 text-center md:text-xl md:leading-7;
+}
+.description {
+  @apply mt-4 text-xs leading-4 text-center md:text-sm text-black-secondary;
+}
+.blue-gradient {
+  @apply bg-gradient-to-b from-[#0051FF] to-[#0042D0];
+}
+.purple-gradient {
+  @apply bg-gradient-to-b from-[#BF00FF] to-[#7B0D85];
+}
+.red-gradient {
+  @apply bg-gradient-to-b from-[#FF005E] to-[#B00047];
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: white;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #bcd2db;
+  opacity: 0.3;
+  border-radius: 100px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #bcd2db;
+  opacity: 0.3;
+}
+
+/* Scrollbar Styles for Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin; /* Make the scrollbar thinner */
+  scrollbar-color: #bcd2db white; /* Set scrollbar thumb and track colors */
+}
+
+/* Optional: Hover effect for Firefox */
+.custom-scrollbar:hover {
+  scrollbar-color: #bcd2db #ffffff; /* Change thumb color on hover */
+}
+
+.link-hover {
+  @apply duration-200 hover:text-accentCyan;
+}
+
+.w-fill-available {
+  width: -webkit-fill-available;
+}
