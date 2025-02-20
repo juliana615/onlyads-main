@@ -43,3 +43,5 @@ next-env.d.ts
 /media
 scraper/tiktok/lastid.txt
 scraper/facebook/.env
+scraper/facebook/parameter.json
+scraper/facebook/video/*

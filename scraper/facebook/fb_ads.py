@@ -3,7 +3,18 @@ import requests
 import json
 from bs4 import BeautifulSoup
 import re
+from pymongo import MongoClient
+import time
+from urllib.parse import urlparse
 
+client = MongoClient('mongodb://seo_cromom_user:SOh3TbYhx8ypJPxmt1oOfLUjkoipuy88999978Gty@127.0.0.1:27017/seo_cromom_db')
+db = client.seo_cromom_db
+collection = db.facebook
+
+video_dir = os.path.join(os.getcwd(), 'video')
+if not os.path.isdir(video_dir):
+    os.mkdir(video_dir)
+    
 def find_sub_json(json_obj, key):
     """
     Recursively search for a sub-JSON containing the specified key.
@@ -34,6 +45,23 @@ def find_sub_json(json_obj, key):
     # If no match found, return None
     return None
 
+def download_video(url, save_path):
+    if os.path.isfile(save_path):
+        print(f"Video already downloaded here: {save_path}")
+        return True
+
+    response = requests.get(url, stream=True)
+    
+    if response.status_code == 200:
+        with open(save_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        print(f"Video downloaded successfully and saved as {save_path}")
+        return True
+    else:
+        print(f"Failed to download the video. Status code: {response.status_code}")
+        return False
+        
 def get_details_from_ads_libray(id):
     url = f'https://www.facebook.com/ads/archive/?id={id}'
     response = requests.get(url)
@@ -54,10 +82,21 @@ def get_details_from_ads_libray(id):
     else:
         print('deeplinkAdCard field is empty')
         return {}
+    format = snapshot.get('display_format')
+    if format == 'video':
+        video_url = snapshot.get('videos')[0].get('video_sd_url')
+        parsed_url = urlparse(video_url)
+        video_name = os.path.basename(parsed_url.path)
+        video_path = os.path.join(video_dir, video_name)
+        download_video(video_url, video_path)
+    else:
+        video_path = ''
+        
     res_json = {
         'cta_type': snapshot.get('cta_type'),
         'likes': snapshot.get('page_like_count'),
         'format': snapshot.get('display_format'),
+        'video': video_path,
         'ad_run_time': ad_card.get('startDate')
     }
     return res_json
@@ -77,18 +116,27 @@ def get_details_from_graphql(ad_id, page_id):
     if response.status_code != 200:
         print(f'Response Error: {response.status_code}')
         return {}
-    response_json = response.json()
-    aaa_info = response_json.get('data').get('ad_library_main').get('ad_details').get('aaa_info')
-    if aaa_info != '':
-        res_json = {
-            'gender_audience': aaa_info.get('gender_audience'),
-            'age_audience': aaa_info.get('age_audience'),
-            'location_audience': aaa_info.get('location_audience')
-        }
-        return res_json
-    else:
-        print('aaa_info field not exist!')
+    try:
+        response_json = response.json()
+        aaa_info = response_json.get('data').get('ad_library_main').get('ad_details').get('aaa_info')
+        if aaa_info != '':
+            res_json = {
+                'gender_audience': aaa_info.get('gender_audience'),
+                'age_audience': aaa_info.get('age_audience'),
+                'location_audience': aaa_info.get('location_audience')
+            }
+            return res_json
+        else:
+            print('aaa_info field not exist!')
+            return {}
+    except requests.exceptions.JSONDecodeError:
+        print("Error: Response is not valid JSON.")
+        print("Response content:", response.text)
         return {}
+    except Exception as e:
+        print(f"Detail is not retrieved due to this error: {e}")
+        return {}
+        
 
 def get_result_json(data):
     ad_id = data.get('id')
@@ -99,13 +147,38 @@ def get_result_json(data):
     # print(details_from_graphql)
     return {**data, **details_from_library, **details_from_graphql}
     
+def insert_or_update_db(data):
+    result = collection.find_one({"id": data.get("id")})
+    if result:
+        collection.update_one({"id": data.get("id")}, {"$set": data})
+        print(f'Updated: {data.get("id")}')
+    else:
+        collection.insert_one(data)
+        print(f'Inserted: {data.get("id")}')
+
+def show_db_collection_all():
+    documents = collection.find()
+    for doc in documents:
+        print(doc)
+    
 def main():
+    # collection.delete_many({})
+    # show_db_collection_all()
     with open('./data.txt', 'r', encoding='utf-8') as fh_data:
         data = fh_data.read()
-    sample_data = data.split('\n')[0]
-    data_json = json.loads(sample_data)
-    result_json = get_result_json(data_json)
-    print(result_json)
+    sample_data = data.split('\n')
+    for i in range(len(sample_data)):
+        data_json = json.loads(sample_data[i])
+        result_json = get_result_json(data_json)
+        # print(result_json)
+        insert_or_update_db(result_json)
+            # video_url = 
+            
+        # if i == 10:
+        #     break
+        # print("Waiting for 3 seconds...")
+        # time.sleep(3)
+    client.close()
     
 if __name__ == '__main__':
     main()
