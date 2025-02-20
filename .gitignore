@@ -45,3 +45,6 @@ scraper/tiktok/lastid.txt
 scraper/facebook/.env
 scraper/facebook/parameter.json
 scraper/facebook/video/*
+
+scraper/tiktok/results/*
+scraper/tiktok/video/*
