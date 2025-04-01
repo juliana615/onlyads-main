@@ -64,42 +64,55 @@ def download_video(url, save_path):
         
 def get_details_from_ads_libray(id):
     url = f'https://www.facebook.com/ads/archive/?id={id}'
+    print(f'url: {url}')
     response = requests.get(url)
     if response.status_code != 200:
         print(f'Response Error: {response.status_code}')
         return {}
     soup = BeautifulSoup(response.text, 'html.parser')
     script_tags = soup.find_all('script', {'type': 'application/json'})
+    # my_script = script_tags[12]
     # print(len(script_tags))
-    my_script = script_tags[12]
-    script_content = my_script.text
-    content_json = json.loads(script_content)
-    my_json = find_sub_json(content_json, 'cavalryLid')
-    # print(my_json)
-    ad_card = my_json.get('entryPointRoot').get('otherProps').get('deeplinkAdCard')
-    if ad_card != '':
-        snapshot = ad_card.get('snapshot')
+    my_script = None
+    for script in script_tags:
+        if script.string and 'cavalryLid' in script.string:
+            my_script = script
+            break
+    
+    if my_script:
+        script_content = my_script.text
+        content_json = json.loads(script_content)
+        # print(f'content_json: {content_json}')
+        my_json = find_sub_json(content_json, 'cavalryLid')
+        # print(my_json)
+        ad_card = my_json.get('entryPointRoot').get('otherProps').get('deeplinkAdCard')
+        if ad_card != '':
+            snapshot = ad_card.get('snapshot')
+        else:
+            print('deeplinkAdCard field is empty')
+            return {}
+        format = snapshot.get('display_format')
+        if format == 'video':
+            video_url = snapshot.get('videos')[0].get('video_sd_url')
+            parsed_url = urlparse(video_url)
+            video_name = os.path.basename(parsed_url.path)
+            video_path = os.path.join(video_dir, video_name)
+            download_video(video_url, video_path)
+        else:
+            video_path = ''
+            
+        res_json = {
+            'cta_type': snapshot.get('cta_type'),
+            'likes': snapshot.get('page_like_count'),
+            'format': snapshot.get('display_format'),
+            'video': video_path,
+            'ad_run_time': ad_card.get('startDate')
+        }
+        return res_json
     else:
-        print('deeplinkAdCard field is empty')
-        return {}
-    format = snapshot.get('display_format')
-    if format == 'video':
-        video_url = snapshot.get('videos')[0].get('video_sd_url')
-        parsed_url = urlparse(video_url)
-        video_name = os.path.basename(parsed_url.path)
-        video_path = os.path.join(video_dir, video_name)
-        download_video(video_url, video_path)
-    else:
-        video_path = ''
-        
-    res_json = {
-        'cta_type': snapshot.get('cta_type'),
-        'likes': snapshot.get('page_like_count'),
-        'format': snapshot.get('display_format'),
-        'video': video_path,
-        'ad_run_time': ad_card.get('startDate')
-    }
-    return res_json
+        print('my_script is none')
+        exit(0)
+        return None
 
 def get_details_from_graphql(ad_id, page_id):
     url = 'https://www.facebook.com/api/graphql/'
